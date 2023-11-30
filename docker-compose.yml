@@ -1,0 +1,11 @@
+version: '3'
+services:
+  live-server:
+    image: alqutami/rtmp-hls
+    ports:
+      - "1935:1935"
+      - "8080:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    environment:
+      - cpus=1

@@ -5,8 +5,8 @@ It is based on [alqutami/rtmp-hls](https://hub.docker.com/r/alqutami/rtmp-hls) a
 ## Usage
 ### Pulling this repository and starting the container
 ```bash
-git clone https://github.com/TechnoTUT/live-server.git
-cd live-server
+git clone https://github.com/TechnoTUT/rtmp-live-server.git
+cd rtmp-live-server
 docker-compose up -d
 ```
 ### Start streaming

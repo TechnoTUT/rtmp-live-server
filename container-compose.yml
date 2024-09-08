@@ -1,7 +1,10 @@
 version: '3'
 services:
   live-server:
-    image: ghcr.io/technotut/rtmp-live-server:main
+    container_name: live-server
+    build:
+      context: .
+      dockerfile: Containerfile
     ports:
       - "1935:1935"
       - "8080:8080"

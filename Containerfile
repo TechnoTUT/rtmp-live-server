@@ -1,4 +1,4 @@
-FROM oraclelinux:9
+FROM oraclelinux:9 as build
 
 ARG nginx_version=1.26.2
 ARG rtmp_version=1.2.2
@@ -21,20 +21,31 @@ RUN dnf update -y \
         --error-log-path=/var/log/nginx/error.log \
         --http-log-path=/var/log/nginx/access.log \		
         --pid-path=/var/run/nginx/nginx.pid \
-        --lock-path=/var/lock/nginx.lock \
         --http-client-body-temp-path=/tmp/nginx-client-body \
         --with-http_ssl_module \
         --with-threads \
+        --with-file-aio \
         --add-module=../nginx-rtmp-module-${rtmp_version} \
     && make -j$(nproc) \
     && make install \
-    && cp ../nginx-rtmp-module-${rtmp_version}/stat.xsl /usr/local/nginx/html/ \
+    && cp ../nginx-rtmp-module-${rtmp_version}/stat.xsl /usr/local/nginx/html/
+
+FROM oraclelinux:9
+
+COPY --from=build /usr/local/sbin/nginx /usr/local/sbin/nginx
+COPY --from=build /etc/nginx /etc/nginx
+COPY --from=build /var/log/nginx /var/log/nginx
+COPY --from=build /var/run/nginx /var/run/nginx
+
+RUN dnf update -y && dnf clean all \
     && useradd -r nginx \
     && mkdir -p /var/cache/nginx \
     && chown -R nginx:nginx /var/cache/nginx \
     && ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log
 
+COPY --from=build /usr/local/nginx/html /usr/local/nginx/html
+COPY favicon.ico /usr/local/nginx/html/favicon.ico
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY players /usr/local/nginx/html/players
 

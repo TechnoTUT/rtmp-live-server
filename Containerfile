@@ -30,14 +30,14 @@ RUN dnf update -y \
     && make install \
     && cp ../nginx-rtmp-module-${rtmp_version}/stat.xsl /usr/local/nginx/html/
 
-FROM oraclelinux:9
+FROM oraclelinux:9-slim
 
 COPY --from=build /usr/local/sbin/nginx /usr/local/sbin/nginx
 COPY --from=build /etc/nginx /etc/nginx
 COPY --from=build /var/log/nginx /var/log/nginx
 COPY --from=build /var/run/nginx /var/run/nginx
 
-RUN dnf update -y && dnf clean all \
+RUN microdnf update -y && microdnf clean all \
     && useradd -r nginx \
     && mkdir -p /var/cache/nginx \
     && chown -R nginx:nginx /var/cache/nginx \

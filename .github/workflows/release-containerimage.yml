@@ -55,7 +55,7 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           context: .
-          file: Dockerfile
+          file: Containerfile
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
 

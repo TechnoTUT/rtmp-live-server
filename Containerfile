@@ -41,4 +41,4 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY players /usr/local/nginx/html/players
 COPY favicon.ico /usr/local/nginx/html/favicon.ico
 
-CMD ["nginx","-g","'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]

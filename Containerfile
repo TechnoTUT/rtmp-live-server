@@ -8,7 +8,7 @@ EXPOSE 80
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update -y && apt-get upgrade -y \
-    && apt-get install -y nginx=1.22.1-9 \
+    && apt-get install -y nginx \
     git wget tar build-essential libperl-dev libgeoip-dev libgd-dev libpcre3 libpcre3-dev libxml2 libxslt1-dev libxslt1.1 libxslt1-dev gettext-base \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /tmp && cd /tmp && wget https://nginx.org/download/nginx-1.22.1.tar.gz && tar xzf nginx-1.22.1.tar.gz && rm -f nginx-1.22.1.tar.gz \
@@ -28,7 +28,7 @@ RUN apt-get update -y && apt-get upgrade -y \
 
 FROM debian:12-slim
 RUN apt-get update -y && apt-get upgrade -y \
-    && apt-get install -y nginx=1.22.1-9 gettext-base \
+    && apt-get install -y nginx gettext-base \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /usr/lib/nginx/modules \
     && ln -sf /dev/stdout /var/log/nginx/access.log \

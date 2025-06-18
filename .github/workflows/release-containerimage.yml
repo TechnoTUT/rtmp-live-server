@@ -3,10 +3,6 @@ name: Create and publish a Docker image
 on:
   workflow_dispatch:
   push:
-
-on:
-  workflow_dispatch:
-  push:
     paths-ignore:
       - 'README.md'
 

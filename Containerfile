@@ -34,13 +34,13 @@ RUN apt-get update -y && apt-get upgrade -y \
     && ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log \
     && rm -rf /etc/nginx/nginx.conf \
-    && rm -rf /usr/local/nginx/html/* \
+    && rm -rf /usr/share/nginx/html/* \
     && mkdir -p /mnt/hls
 
 COPY --from=build /tmp/nginx-1.22.1/objs/*.so /usr/lib/nginx/modules
 COPY --from=build /tmp/nginx-rtmp-module/stat.xsl /usr/local/nginx/html/stat.xsl
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY players /usr/local/nginx/html/players
-COPY favicon.ico /usr/local/nginx/html/favicon.ico
+COPY players /usr/share/nginx/html/players
+COPY favicon.ico /usr/share/nginx/html/favicon.ico
 
 CMD ["nginx", "-g", "daemon off;"]

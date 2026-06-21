@@ -3,7 +3,7 @@ FROM debian:13-slim
 LABEL maintainer="TechnoTUT <gh@technotut.net>"
 
 EXPOSE 1935
-EXPOSE 80
+EXPOSE 8080
 
 ENV DEBIAN_FRONTEND noninteractive
 

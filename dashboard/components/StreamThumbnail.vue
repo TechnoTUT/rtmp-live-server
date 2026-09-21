@@ -3,15 +3,24 @@
     <div v-if="!active" class="preview-placeholder">
       <span>OFFLINE</span>
     </div>
-    <div v-else class="video-container">
+    <div v-else class="canvas-container">
+      <!-- Low FPS lightweight render target -->
+      <canvas
+        ref="canvasElement"
+        width="140"
+        height="80"
+        class="stream-thumb-canvas"
+      ></canvas>
+      <span class="live-tag">LIVE</span>
+
+      <!-- Hidden video element for lightweight background frame extraction -->
       <video
         ref="videoElement"
         muted
         autoplay
         playsinline
-        class="stream-thumb-video"
+        style="display: none;"
       ></video>
-      <span class="live-tag">LIVE</span>
     </div>
   </div>
 </template>
@@ -25,8 +34,25 @@ const props = defineProps<{
   active: boolean
 }>()
 
+const canvasElement = ref<HTMLCanvasElement | null>(null)
 const videoElement = ref<HTMLVideoElement | null>(null)
 let hls: Hls | null = null
+let captureTimer: any = null
+
+const captureFrame = () => {
+  if (!props.active) return
+  const video = videoElement.value
+  const canvas = canvasElement.value
+  if (!video || !canvas) return
+
+  if (video.readyState >= 2 && video.videoWidth > 0) {
+    const ctx = canvas.getContext('2d', { alpha: false })
+    if (ctx) {
+      // Draw frame into miniature 140x80 canvas (1 FPS)
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    }
+  }
+}
 
 const startPlayer = () => {
   if (!props.active || !videoElement.value) return
@@ -39,14 +65,12 @@ const startPlayer = () => {
   }
 
   if (Hls.isSupported()) {
-    // Low footprint configuration for continuous thumbnail preview
     hls = new Hls({
       maxBufferLength: 0.5,
       maxMaxBufferLength: 1,
       liveSyncDurationCount: 1,
       enableWorker: true,
       lowLatencyMode: true,
-      // Minimal audio/video buffer
       backBufferLength: 0
     })
 
@@ -65,9 +89,17 @@ const startPlayer = () => {
     videoElement.value.src = src
     videoElement.value.play().catch(() => {})
   }
+
+  // 1 FPS periodic snapshot extraction to keep CPU/GPU load near zero
+  if (captureTimer) clearInterval(captureTimer)
+  captureTimer = setInterval(captureFrame, 1000)
 }
 
 const stopPlayer = () => {
+  if (captureTimer) {
+    clearInterval(captureTimer)
+    captureTimer = null
+  }
   if (videoElement.value) {
     videoElement.value.pause()
     videoElement.value.removeAttribute('src')
@@ -119,13 +151,13 @@ onUnmounted(() => {
   background: #2d3748;
 }
 
-.video-container {
+.canvas-container {
   width: 100%;
   height: 100%;
   position: relative;
 }
 
-.stream-thumb-video {
+.stream-thumb-canvas {
   width: 100%;
   height: 100%;
   object-fit: cover;

@@ -20,15 +20,12 @@ jobs:
       IMAGE_NAME: ghcr.io/technotut/rtmp-live-server
     strategy:
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        include:
+          - platform: linux/amd64
+            platform-pair: linux_amd64
+          - platform: linux/arm64
+            platform-pair: linux_arm64
     steps:
-      - name: Prepare
-        run: |
-          platform=${{ matrix.platform }}
-          echo "PLATFORM_PAIR=${platform//\//_}" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -70,7 +67,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-server-${{ env.PLATFORM_PAIR }}
+          name: digests-server-${{ matrix.platform-pair }}
           path: /tmp/digests-server/*
           if-no-files-found: error
           retention-days: 1
@@ -128,15 +125,12 @@ jobs:
       IMAGE_NAME: ghcr.io/technotut/rtmp-live-server-dashboard
     strategy:
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        include:
+          - platform: linux/amd64
+            platform-pair: linux_amd64
+          - platform: linux/arm64
+            platform-pair: linux_arm64
     steps:
-      - name: Prepare
-        run: |
-          platform=${{ matrix.platform }}
-          echo "PLATFORM_PAIR=${platform//\//_}" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -178,7 +172,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-dashboard-${{ env.PLATFORM_PAIR }}
+          name: digests-dashboard-${{ matrix.platform-pair }}
           path: /tmp/digests-dashboard/*
           if-no-files-found: error
           retention-days: 1

@@ -308,12 +308,18 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
 }
+.header-controls > * + * {
+  margin-left: 12px;
+}
 
 .refresh-control {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
+}
+.refresh-control > * + * {
+  margin-left: 6px;
 }
 
 .btn {
@@ -330,6 +336,9 @@ onUnmounted(() => {
   min-width: 88px;
   justify-content: center;
   user-select: none;
+}
+.btn .refresh-icon {
+  margin-right: 6px;
 }
 .btn:hover { background-color: #2b6cb0; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }

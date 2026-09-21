@@ -21,5 +21,9 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@vitejs/plugin-legacy": "^7.2.1",
+    "terser": "^5.51.2"
+  }
 }

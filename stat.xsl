@@ -13,15 +13,131 @@
     <html>
         <head>
             <title>RTMP statistics</title>
+            <script type="text/javascript">
+                <![CDATA[
+                var refreshTimer = null;
+                var xslDoc = null;
+
+                function loadXsl(callback) {
+                    if (xslDoc) { callback(xslDoc); return; }
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.open("GET", "/stat.xsl", true);
+                    xhttp.onload = function() {
+                        if (xhttp.status === 200) {
+                            xslDoc = xhttp.responseXML;
+                            callback(xslDoc);
+                        }
+                    };
+                    xhttp.send("");
+                }
+
+                function morphNode(curr, next) {
+                    if (curr.nodeType === 3 && next.nodeType === 3) {
+                        if (curr.nodeValue !== next.nodeValue) {
+                            curr.nodeValue = next.nodeValue;
+                        }
+                        return;
+                    }
+                    if (curr.nodeType !== 1 || next.nodeType !== 1 || curr.nodeName !== next.nodeName) {
+                        curr.parentNode.replaceChild(next.cloneNode(true), curr);
+                        return;
+                    }
+                    // Sync attributes (except inline display style to keep open state)
+                    var cAttrs = curr.attributes;
+                    var nAttrs = next.attributes;
+                    for (var i = 0; i < nAttrs.length; i++) {
+                        var a = nAttrs[i];
+                        if (a.name === "style" && curr.hasAttribute("id") && curr.nodeName === "TR") {
+                            continue; // preserve expanded/collapsed state
+                        }
+                        if (curr.getAttribute(a.name) !== a.value) {
+                            curr.setAttribute(a.name, a.value);
+                        }
+                    }
+                    // Sync children
+                    var cChildren = curr.childNodes;
+                    var nChildren = next.childNodes;
+                    var cLen = cChildren.length;
+                    var nLen = nChildren.length;
+                    var minLen = Math.min(cLen, nLen);
+                    for (var j = 0; j < minLen; j++) {
+                        morphNode(cChildren[j], nChildren[j]);
+                    }
+                    if (cLen < nLen) {
+                        for (var k = cLen; k < nLen; k++) {
+                            curr.appendChild(nChildren[k].cloneNode(true));
+                        }
+                    } else if (cLen > nLen) {
+                        for (var l = cLen - 1; l >= nLen; l--) {
+                            curr.removeChild(cChildren[l]);
+                        }
+                    }
+                }
+
+                function updateStats() {
+                    loadXsl(function(xsl) {
+                        var xmlHttp = new XMLHttpRequest();
+                        xmlHttp.open("GET", window.location.href, true);
+                        xmlHttp.setRequestHeader("Cache-Control", "no-cache");
+                        xmlHttp.onload = function() {
+                            if (xmlHttp.status === 200 && xmlHttp.responseXML) {
+                                try {
+                                    var xsltProcessor = new XSLTProcessor();
+                                    xsltProcessor.importStylesheet(xsl);
+                                    var resultDoc = xsltProcessor.transformToDocument(xmlHttp.responseXML);
+                                    var next = resultDoc.getElementById("stat-table");
+                                    var curr = document.getElementById("stat-table");
+                                    if (next && curr) {
+                                        morphNode(curr, next);
+                                        return;
+                                    }
+                                } catch(e) {
+                                    console.error("XSLT transform error:", e);
+                                }
+                            }
+                        };
+                        xmlHttp.send("");
+                    });
+                }
+
+                function setRefresh(sec) {
+                    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+                    if (sec > 0) refreshTimer = setInterval(updateStats, sec * 1000);
+                }
+
+                window.addEventListener("DOMContentLoaded", function() {
+                    setRefresh(2);
+                });
+                ]]>
+            </script>
         </head>
-        <body>
-            <xsl:apply-templates select="rtmp"/>
+        <body style="font-family:sans-serif; margin:15px;">
+
+            <div style="margin-bottom: 8px; font-size: 13px;">
+                <b>RTMP statistics</b>
+                &#160;|&#160;
+                Auto refresh:
+                <select onchange="setRefresh(parseInt(this.value, 10))" style="font-size:12px;">
+                    <option value="1">1s</option>
+                    <option value="2" selected="selected">2s</option>
+                    <option value="5">5s</option>
+                    <option value="0">off</option>
+                </select>
+                &#160;
+                <a href="" onclick="updateStats(); return false;">[refresh now]</a>
+            </div>
+
+            <div id="stat-table">
+                <xsl:apply-templates select="rtmp"/>
+            </div>
+
             <hr/>
-            Generated by <a href='https://github.com/arut/nginx-rtmp-module'>
-            nginx-rtmp-module</a>&#160;<xsl:value-of select="/rtmp/nginx_rtmp_version"/>,
-            <a href="http://nginx.org">nginx</a>&#160;<xsl:value-of select="/rtmp/nginx_version"/>,
-            pid <xsl:value-of select="/rtmp/pid"/>,
-            built <xsl:value-of select="/rtmp/built"/>&#160;<xsl:value-of select="/rtmp/compiler"/>
+            <span style="font-size:11px; color:#666;">
+                Generated by <a href='https://github.com/arut/nginx-rtmp-module'>nginx-rtmp-module</a>&#160;<xsl:value-of select="/rtmp/nginx_rtmp_version"/>,
+                <a href="http://nginx.org">nginx</a>&#160;<xsl:value-of select="/rtmp/nginx_version"/>,
+                pid <xsl:value-of select="/rtmp/pid"/>,
+                built <xsl:value-of select="/rtmp/built"/>&#160;<xsl:value-of select="/rtmp/compiler"/>
+            </span>
         </body>
     </html>
 </xsl:template>
@@ -136,7 +252,7 @@
                 <xsl:attribute name="onclick">
                     var d=document.getElementById('<xsl:value-of select="../../name"/>-<xsl:value-of select="name"/>');
                     d.style.display=d.style.display=='none'?'':'none';
-                    return false
+                    return false;
                 </xsl:attribute>
                 <xsl:value-of select="name"/>
                 <xsl:if test="string-length(name) = 0">
@@ -286,8 +402,8 @@
 
 <xsl:template name="streamstate">
     <xsl:choose>
-        <xsl:when test="active">active</xsl:when>
-        <xsl:otherwise>idle</xsl:otherwise>
+        <xsl:when test="active"><span style="color:#008000; font-weight:bold;">active</span></xsl:when>
+        <xsl:otherwise><span style="color:#888888;">idle</span></xsl:otherwise>
     </xsl:choose>
 </xsl:template>
 
@@ -329,7 +445,16 @@
             </a>
         </td>
         <td><xsl:value-of select="swfurl"/></td>
-        <td><xsl:value-of select="dropped"/></td>
+        <td>
+            <xsl:choose>
+                <xsl:when test="dropped &gt; 0">
+                    <span style="color:#c00; font-weight:bold;"><xsl:value-of select="dropped"/></span>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="dropped"/>
+                </xsl:otherwise>
+            </xsl:choose>
+        </td>
         <td><xsl:value-of select="timestamp"/></td>
         <td><xsl:value-of select="avsync"/></td>
         <td>

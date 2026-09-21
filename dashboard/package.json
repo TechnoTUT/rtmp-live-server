@@ -1,0 +1,25 @@
+{
+  "name": "dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.1",
+    "hls.js": "^1.7.3",
+    "nuxt": "^3.21.11",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "version": "1.0.0",
+  "description": "Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

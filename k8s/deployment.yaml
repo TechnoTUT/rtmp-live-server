@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rtmp-live
+---
+# -------------------------------------------------------------
+# Live Server (RTMP & Nginx HTTP)
+# -------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: live-server
+  namespace: rtmp-live
+  labels:
+    app.kubernetes.io/name: live-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: live-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: live-server
+    spec:
+      containers:
+        - name: rtmp-server
+          image: ghcr.io/technotut/rtmp-live-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: rtmp
+              containerPort: 1935
+              protocol: TCP
+            - name: http-internal
+              containerPort: 8080
+              protocol: TCP
+          securityContext:
+            privileged: false
+            # GID 44 (video) / 105 (render) for host /dev/dri access
+            supplementalGroups: [44, 105]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          volumeMounts:
+            - name: dev-dri
+              mountPath: /dev/dri
+      volumes:
+        - name: dev-dri
+          hostPath:
+            path: /dev/dri
+            type: Directory
+---
+# RTMP Public Service (LoadBalancer)
+apiVersion: v1
+kind: Service
+metadata:
+  name: live-server-rtmp
+  namespace: rtmp-live
+  labels:
+    app.kubernetes.io/name: live-server
+spec:
+  type: LoadBalancer
+  ports:
+    - name: rtmp
+      port: 1935
+      targetPort: 1935
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: live-server
+---
+# Internal ClusterIP for Dashboard to fetch stats & thumbnails
+apiVersion: v1
+kind: Service
+metadata:
+  name: live-server
+  namespace: rtmp-live
+  labels:
+    app.kubernetes.io/name: live-server
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-internal
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: live-server
+---
+# -------------------------------------------------------------
+# Dashboard (Nuxt 3 BFF Web UI)
+# -------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: live-dashboard
+  namespace: rtmp-live
+  labels:
+    app.kubernetes.io/name: live-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: live-dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: live-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: ghcr.io/technotut/rtmp-live-server-dashboard:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: RTMP_STAT_URL
+              value: "http://live-server:8080/stat"
+            - name: RTMP_THUMBNAIL_BASE_URL
+              value: "http://live-server:8080/thumbnails"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+# Dashboard ClusterIP Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: live-dashboard
+  namespace: rtmp-live
+  labels:
+    app.kubernetes.io/name: live-dashboard
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: live-dashboard
+---
+# Dashboard Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: live-dashboard-ingress
+  namespace: rtmp-live
+  labels:
+    app.kubernetes.io/name: live-dashboard
+  annotations:
+    # Example ingress annotations (uncomment / adjust for your ingress controller):
+    # kubernetes.io/ingress.class: "nginx"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  rules:
+    - host: rtmp-dashboard.example.com # Replace with your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: live-dashboard
+                port:
+                  number: 3000

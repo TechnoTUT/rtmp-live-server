@@ -1,9 +1,26 @@
 services:
   live-server:
     container_name: live-server
-    image: ghcr.io/technotut/rtmp-live-server:main
+    build:
+      context: .
+      dockerfile: Containerfile
     ports:
       - "1935:1935"
       - "8080:8080"
+    devices:
+      - "/dev/dri:/dev/dri"
+    restart: unless-stopped
+
+  dashboard:
+    container_name: live-dashboard
+    build:
+      context: ./dashboard
+      dockerfile: Containerfile
+    ports:
+      - "3000:3000"
     environment:
-      - cpus=1
+      - RTMP_STAT_URL=http://live-server:8080/stat
+      - RTMP_THUMBNAIL_BASE_URL=http://live-server:8080/thumbnails
+    depends_on:
+      - live-server
+    restart: unless-stopped

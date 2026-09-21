@@ -7,3 +7,15 @@ services:
       - "8080:8080"
     environment:
       - cpus=1
+
+  dashboard:
+    container_name: live-dashboard
+    build:
+      context: ./dashboard
+      dockerfile: Containerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - RTMP_STAT_URL=http://live-server:8080/stat
+    depends_on:
+      - live-server

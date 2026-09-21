@@ -4,71 +4,37 @@
       <span>OFFLINE</span>
     </div>
     <div v-else class="image-container">
-      <!-- Lightweight image tag: zero browser video-decoding load -->
+      <!-- 30 FPS Smooth MJPEG stream via single HTTP persistent connection -->
       <img
-        :src="currentSrc"
+        :src="streamUrl"
         alt="Live Preview"
         class="stream-thumb-img"
         @error="onImageError"
       />
-      <span class="live-tag">LIVE</span>
+      <span class="live-tag">30 FPS</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps<{
   streamName: string
   active: boolean
 }>()
 
-const currentSrc = ref('')
-let timer: any = null
-
-const updateThumbnail = () => {
-  if (!props.active) return
-  // Fetch latest snapshot (10 FPS = 100ms interval)
-  currentSrc.value = `http://localhost:8080/thumbnails/${props.streamName}.jpg?t=${Date.now()}`
-}
+const streamUrl = computed(() => {
+  if (!props.active) return ''
+  return `/mjpeg?stream=${encodeURIComponent(props.streamName)}`
+})
 
 const onImageError = (e: Event) => {
-  // If thumbnail is still generating, suppress broken image
   const target = e.target as HTMLImageElement
   if (target) {
     target.style.opacity = '0.5'
   }
 }
-
-watch(() => props.active, (isActive) => {
-  if (isActive) {
-    updateThumbnail()
-    if (!timer) {
-      timer = setInterval(updateThumbnail, 100)
-    }
-  } else {
-    if (timer) {
-      clearInterval(timer)
-      timer = null
-    }
-    currentSrc.value = ''
-  }
-}, { immediate: true })
-
-onMounted(() => {
-  if (props.active) {
-    updateThumbnail()
-    timer = setInterval(updateThumbnail, 100)
-  }
-})
-
-onUnmounted(() => {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
-})
 </script>
 
 <style scoped>
@@ -106,14 +72,13 @@ onUnmounted(() => {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: opacity 0.2s ease;
 }
 
 .live-tag {
   position: absolute;
   top: 4px;
   left: 4px;
-  background: rgba(229, 62, 62, 0.9);
+  background: rgba(49, 130, 206, 0.9);
   color: white;
   font-size: 9px;
   font-weight: bold;

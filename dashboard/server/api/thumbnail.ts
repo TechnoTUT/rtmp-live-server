@@ -11,7 +11,9 @@ export default defineEventHandler(async (event) => {
 
   // Fetch thumbnail from internal Nginx
   try {
-    const nginxRes = await fetch(`http://127.0.0.1:8080/thumbnails/${encodeURIComponent(stream)}.jpg`)
+    const config = useRuntimeConfig()
+    const baseUrl = config.rtmpThumbnailBaseUrl || process.env.RTMP_THUMBNAIL_BASE_URL || 'http://127.0.0.1:8080/thumbnails'
+    const nginxRes = await fetch(`${baseUrl}/${encodeURIComponent(stream)}.jpg`)
     if (!nginxRes.ok) {
       throw createError({ statusCode: 404, statusMessage: 'Thumbnail not available' })
     }

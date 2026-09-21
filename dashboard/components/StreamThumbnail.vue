@@ -49,8 +49,8 @@ const startPolling = () => {
   stopPolling()
   if (props.active) {
     updateFrame()
-    // Poll at 5 fps (200ms) - smooth preview with balanced CPU usage
-    timer = setInterval(updateFrame, 200)
+    // Poll at 10 fps (100ms) - high smoothness with low-resource footprint
+    timer = setInterval(updateFrame, 100)
   }
 }
 

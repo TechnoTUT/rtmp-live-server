@@ -20,5 +20,7 @@ RUN apt-get update -y \
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY favicon.ico /var/www/html/favicon.ico
 COPY stat.xsl /var/www/html/rtmp/stat.xsl
+COPY cleanup-stream.sh /usr/local/bin/cleanup-stream.sh
+RUN chmod +x /usr/local/bin/cleanup-stream.sh
 
 CMD ["nginx", "-g", "daemon off;"]

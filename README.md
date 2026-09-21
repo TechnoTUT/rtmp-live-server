@@ -17,7 +17,7 @@ Based on [alqutami/rtmp-hls](https://hub.docker.com/r/alqutami/rtmp-hls) and [ç°
 - **Hover Zoom Preview**: Smooth `360x202` preview popover when hovering over any stream thumbnail.
 - **Real-Time Stream Metrics**: Live tracking of bitrate (in/out), transferred data, active clients, and dropped frames.
 - **Privacy First (BFF)**: Automatically masks publisher and subscriber IP addresses.
-- **Multi-Arch & Kubernetes Ready**: Automated `linux/amd64` and `linux/arm64` CI/CD builds with production Kubernetes manifests.
+- **Multi-Arch & Kubernetes Ready**: Automated `linux/amd64` CI/CD builds with production Kubernetes manifests.
 
 ---
 

@@ -23,8 +23,6 @@ jobs:
         include:
           - platform: linux/amd64
             platform-pair: linux_amd64
-          - platform: linux/arm64
-            platform-pair: linux_arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -128,8 +126,6 @@ jobs:
         include:
           - platform: linux/amd64
             platform-pair: linux_amd64
-          - platform: linux/arm64
-            platform-pair: linux_arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

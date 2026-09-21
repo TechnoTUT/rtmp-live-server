@@ -19,8 +19,9 @@
             <option :value="0">Off</option>
           </select>
         </div>
-        <button class="btn" :disabled="pending" @click="fetchStats">
-          {{ pending ? 'Updating...' : 'Refresh' }}
+        <button class="btn" :class="{ 'btn-loading': pending }" @click="fetchStats(true)">
+          <span class="refresh-icon" :class="{ 'spin': pending }">🔄</span>
+          <span>Refresh</span>
         </button>
       </div>
     </header>
@@ -200,8 +201,8 @@ const totalClients = computed(() => {
   return data.value.data.applications.reduce((acc: number, app: any) => acc + (app.nclients || 0), 0)
 })
 
-const fetchStats = async () => {
-  pending.value = true
+const fetchStats = async (isManual = false) => {
+  if (isManual) pending.value = true
   try {
     const res = await $fetch<StatResponse>('/api/stat')
     if (res.success) {
@@ -213,7 +214,7 @@ const fetchStats = async () => {
   } catch (err: any) {
     errorMsg.value = err.message
   } finally {
-    pending.value = false
+    if (isManual) pending.value = false
   }
 }
 
@@ -323,9 +324,30 @@ onUnmounted(() => {
   border-radius: 4px;
   cursor: pointer;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 88px;
+  justify-content: center;
+  user-select: none;
 }
 .btn:hover { background-color: #2b6cb0; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.refresh-icon {
+  display: inline-block;
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 .btn-sm {
   padding: 3px 8px;
@@ -386,7 +408,7 @@ onUnmounted(() => {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   margin-bottom: 24px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .app-header {

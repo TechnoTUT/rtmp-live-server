@@ -70,6 +70,7 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th style="width: 150px;">Live Preview</th>
                 <th>Stream Name</th>
                 <th>Status</th>
                 <th>Resolution / FPS</th>
@@ -84,13 +85,11 @@
               <template v-for="stream in app.streams" :key="stream.name">
                 <tr :class="{ 'row-active': stream.active }">
                   <td>
-                    <!-- Hover Preview Trigger -->
-                    <span
-                      class="stream-name"
-                      @mouseenter="startPreview(stream.name, $event)"
-                      @mousemove="updatePreviewPos($event)"
-                      @mouseleave="stopPreview"
-                    >
+                    <!-- Persistent Low-Footprint Live Preview -->
+                    <StreamThumbnail :stream-name="stream.name" :active="stream.active" />
+                  </td>
+                  <td>
+                    <span class="stream-name">
                       {{ stream.name || '[EMPTY]' }}
                     </span>
                   </td>
@@ -125,7 +124,7 @@
 
                 <!-- Client Details Sub-table -->
                 <tr v-if="expandedStreams.has(stream.name)" class="sub-table-row">
-                  <td colspan="8">
+                  <td colspan="9">
                     <div class="client-details-box">
                       <h4>Connected Clients ({{ stream.clients.length }})</h4>
                       <table v-if="stream.clients.length > 0" class="client-table">
@@ -168,24 +167,6 @@
         </div>
       </div>
     </main>
-
-    <!-- Floating Live Preview Window -->
-    <div
-      v-show="previewVisible"
-      class="preview-popup"
-      :style="{ left: previewPos.x + 'px', top: previewPos.y + 'px' }"
-    >
-      <div class="preview-header">
-        <span>PREVIEW: {{ previewStreamName }}</span>
-      </div>
-      <video
-        ref="videoRef"
-        muted
-        autoplay
-        playsinline
-        class="preview-video"
-      ></video>
-    </div>
   </div>
 </template>
 
@@ -206,13 +187,6 @@ const refreshInterval = ref(2000)
 let timer: any = null
 
 const expandedStreams = ref<Set<string>>(new Set())
-
-// Hover preview state
-const previewVisible = ref(false)
-const previewStreamName = ref('')
-const previewPos = ref({ x: 0, y: 0 })
-const videoRef = ref<HTMLVideoElement | null>(null)
-let hlsInstance: Hls | null = null
 
 const totalActiveStreams = computed(() => {
   if (!data.value?.data?.applications) return 0
@@ -258,49 +232,6 @@ const toggleDetails = (streamName: string) => {
   }
 }
 
-// Preview Handlers
-const startPreview = (streamName: string, event: MouseEvent) => {
-  previewStreamName.value = streamName
-  previewPos.value = { x: event.pageX + 15, y: event.pageY + 10 }
-  previewVisible.value = true
-
-  const hlsUrl = `http://localhost:8080/hls/${streamName}.m3u8`
-
-  if (videoRef.value) {
-    if (hlsInstance) {
-      hlsInstance.destroy()
-      hlsInstance = null
-    }
-
-    if (Hls.isSupported()) {
-      hlsInstance = new Hls({ maxBufferLength: 1, liveSyncDurationCount: 1 })
-      hlsInstance.loadSource(hlsUrl)
-      hlsInstance.attachMedia(videoRef.value)
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-        videoRef.value?.play().catch(() => {})
-      })
-    } else if (videoRef.value.canPlayType('application/vnd.apple.mpegurl')) {
-      videoRef.value.src = hlsUrl
-      videoRef.value.play().catch(() => {})
-    }
-  }
-}
-
-const updatePreviewPos = (event: MouseEvent) => {
-  previewPos.value = { x: event.pageX + 15, y: event.pageY + 10 }
-}
-
-const stopPreview = () => {
-  previewVisible.value = false
-  if (videoRef.value) {
-    videoRef.value.pause()
-  }
-  if (hlsInstance) {
-    hlsInstance.destroy()
-    hlsInstance = null
-  }
-}
-
 // Helpers
 const formatBps = (bits: number | undefined) => {
   if (!bits) return '0 bps'
@@ -341,7 +272,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
-  stopPreview()
 })
 </script>
 
@@ -540,33 +470,5 @@ onUnmounted(() => {
 .client-table th, .client-table td {
   padding: 8px 12px;
   border-bottom: 1px solid #edf2f7;
-}
-
-/* Floating Preview Popup */
-.preview-popup {
-  position: absolute;
-  z-index: 1000;
-  width: 320px;
-  height: 200px;
-  background: #000;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.preview-header {
-  background: #1a202c;
-  color: #cbd5e0;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.preview-video {
-  width: 100%;
-  height: 174px;
-  background: #000;
-  object-fit: contain;
 }
 </style>

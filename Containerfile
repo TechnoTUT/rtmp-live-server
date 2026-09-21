@@ -8,13 +8,14 @@ EXPOSE 80
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update -y \
-    && apt-get install -y nginx libnginx-mod-rtmp \
+    && apt-get install -y nginx libnginx-mod-rtmp ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log \
     && rm -rf /etc/nginx/nginx.conf \
     && rm -rf /var/www/html/favicon.ico \
-    && mkdir -p /var/www/html/rtmp
+    && mkdir -p /var/www/html/rtmp /tmp/thumbnails \
+    && chmod 777 /tmp/thumbnails
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY favicon.ico /var/www/html/favicon.ico

@@ -3,128 +3,71 @@
     <div v-if="!active" class="preview-placeholder">
       <span>OFFLINE</span>
     </div>
-    <div v-else class="canvas-container">
-      <!-- Low FPS lightweight render target -->
-      <canvas
-        ref="canvasElement"
-        width="140"
-        height="80"
-        class="stream-thumb-canvas"
-      ></canvas>
+    <div v-else class="image-container">
+      <!-- Lightweight image tag: zero browser video-decoding load -->
+      <img
+        :src="currentSrc"
+        alt="Live Preview"
+        class="stream-thumb-img"
+        @error="onImageError"
+      />
       <span class="live-tag">LIVE</span>
-
-      <!-- Hidden video element for lightweight background frame extraction -->
-      <video
-        ref="videoElement"
-        muted
-        autoplay
-        playsinline
-        style="display: none;"
-      ></video>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import Hls from 'hls.js'
 
 const props = defineProps<{
   streamName: string
   active: boolean
 }>()
 
-const canvasElement = ref<HTMLCanvasElement | null>(null)
-const videoElement = ref<HTMLVideoElement | null>(null)
-let hls: Hls | null = null
-let captureTimer: any = null
+const currentSrc = ref('')
+let timer: any = null
 
-const captureFrame = () => {
+const updateThumbnail = () => {
   if (!props.active) return
-  const video = videoElement.value
-  const canvas = canvasElement.value
-  if (!video || !canvas) return
-
-  if (video.readyState >= 2 && video.videoWidth > 0) {
-    const ctx = canvas.getContext('2d', { alpha: false })
-    if (ctx) {
-      // Draw frame into miniature 140x80 canvas (1 FPS)
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-    }
-  }
+  // Cache busting query parameter every 2 seconds
+  currentSrc.value = `http://localhost:8080/thumbnails/${props.streamName}.jpg?t=${Date.now()}`
 }
 
-const startPlayer = () => {
-  if (!props.active || !videoElement.value) return
-
-  const src = `http://localhost:8080/hls/${props.streamName}.m3u8`
-
-  if (hls) {
-    hls.destroy()
-    hls = null
-  }
-
-  if (Hls.isSupported()) {
-    hls = new Hls({
-      maxBufferLength: 0.5,
-      maxMaxBufferLength: 1,
-      liveSyncDurationCount: 1,
-      enableWorker: true,
-      lowLatencyMode: true,
-      backBufferLength: 0
-    })
-
-    hls.loadSource(src)
-    hls.attachMedia(videoElement.value)
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      videoElement.value?.play().catch(() => {})
-    })
-    hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (data.fatal) {
-        hls?.destroy()
-        hls = null
-      }
-    })
-  } else if (videoElement.value.canPlayType('application/vnd.apple.mpegurl')) {
-    videoElement.value.src = src
-    videoElement.value.play().catch(() => {})
-  }
-
-  // 1 FPS periodic snapshot extraction to keep CPU/GPU load near zero
-  if (captureTimer) clearInterval(captureTimer)
-  captureTimer = setInterval(captureFrame, 1000)
-}
-
-const stopPlayer = () => {
-  if (captureTimer) {
-    clearInterval(captureTimer)
-    captureTimer = null
-  }
-  if (videoElement.value) {
-    videoElement.value.pause()
-    videoElement.value.removeAttribute('src')
-    videoElement.value.load()
-  }
-  if (hls) {
-    hls.destroy()
-    hls = null
+const onImageError = (e: Event) => {
+  // If thumbnail is still generating, suppress broken image
+  const target = e.target as HTMLImageElement
+  if (target) {
+    target.style.opacity = '0.5'
   }
 }
 
 watch(() => props.active, (isActive) => {
   if (isActive) {
-    startPlayer()
+    updateThumbnail()
+    if (!timer) {
+      timer = setInterval(updateThumbnail, 2000)
+    }
   } else {
-    stopPlayer()
+    if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+    currentSrc.value = ''
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  if (props.active) {
+    updateThumbnail()
+    timer = setInterval(updateThumbnail, 2000)
   }
 })
 
-onMounted(() => {
-  startPlayer()
-})
-
 onUnmounted(() => {
-  stopPlayer()
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
 })
 </script>
 
@@ -151,18 +94,19 @@ onUnmounted(() => {
   background: #2d3748;
 }
 
-.canvas-container {
+.image-container {
   width: 100%;
   height: 100%;
   position: relative;
+  background: #000;
 }
 
-.stream-thumb-canvas {
+.stream-thumb-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #000;
   display: block;
+  transition: opacity 0.2s ease;
 }
 
 .live-tag {

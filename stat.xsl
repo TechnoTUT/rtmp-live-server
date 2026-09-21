@@ -100,65 +100,6 @@
                     });
                 }
 
-                var previewHls = null;
-                var previewTimer = null;
-
-                function showPreview(streamName, event) {
-                    if (previewTimer) clearTimeout(previewTimer);
-                    var container = document.getElementById("hover-preview-container");
-                    var video = document.getElementById("hover-preview-video");
-                    if (!container || !video) return;
-
-                    var src = "/hls/" + streamName + ".m3u8";
-                    container.style.display = "block";
-                    container.style.left = (event.pageX + 15) + "px";
-                    container.style.top = (event.pageY + 10) + "px";
-
-                    if (video.getAttribute("data-current-src") === src) return;
-                    video.setAttribute("data-current-src", src);
-
-                    if (previewHls) {
-                        previewHls.destroy();
-                        previewHls = null;
-                    }
-
-                    if (window.Hls && Hls.isSupported()) {
-                        previewHls = new Hls({ maxBufferLength: 1, liveSyncDurationCount: 1 });
-                        previewHls.loadSource(src);
-                        previewHls.attachMedia(video);
-                        previewHls.on(Hls.Events.MANIFEST_PARSED, function() {
-                            video.play().catch(function(){});
-                        });
-                    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                        video.src = src;
-                        video.play().catch(function(){});
-                    }
-                }
-
-                function movePreview(event) {
-                    var container = document.getElementById("hover-preview-container");
-                    if (container && container.style.display === "block") {
-                        container.style.left = (event.pageX + 15) + "px";
-                        container.style.top = (event.pageY + 10) + "px";
-                    }
-                }
-
-                function hidePreview() {
-                    previewTimer = setTimeout(function() {
-                        var container = document.getElementById("hover-preview-container");
-                        var video = document.getElementById("hover-preview-video");
-                        if (container) container.style.display = "none";
-                        if (video) {
-                            video.pause();
-                            video.removeAttribute("data-current-src");
-                        }
-                        if (previewHls) {
-                            previewHls.destroy();
-                            previewHls = null;
-                        }
-                    }, 100);
-                }
-
                 function setRefresh(sec) {
                     if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
                     if (sec > 0) refreshTimer = setInterval(updateStats, sec * 1000);
@@ -169,14 +110,8 @@
                 });
                 ]]>
             </script>
-            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
         </head>
         <body style="font-family:sans-serif; margin:15px;">
-            <!-- Floating Live Preview Popup -->
-            <div id="hover-preview-container" style="display:none; position:absolute; z-index:9999; background:#000; border:1px solid #333; box-shadow:2px 2px 8px rgba(0,0,0,0.5); width:320px; height:180px; overflow:hidden;">
-                <div style="background:#222; color:#fff; font-size:11px; padding:2px 6px; font-weight:bold;">LIVE PREVIEW</div>
-                <video id="hover-preview-video" muted="muted" autoplay="autoplay" playsinline="playsinline" style="width:100%; height:156px; background:#000; object-fit:contain;"></video>
-            </div>
 
             <div style="margin-bottom: 8px; font-size: 13px;">
                 <b>RTMP statistics</b>
@@ -319,17 +254,6 @@
                     d.style.display=d.style.display=='none'?'':'none';
                     return false;
                 </xsl:attribute>
-                <xsl:if test="active">
-                    <xsl:attribute name="onmouseenter">
-                        showPreview('<xsl:value-of select="name"/>', event);
-                    </xsl:attribute>
-                    <xsl:attribute name="onmousemove">
-                        movePreview(event);
-                    </xsl:attribute>
-                    <xsl:attribute name="onmouseleave">
-                        hidePreview();
-                    </xsl:attribute>
-                </xsl:if>
                 <xsl:value-of select="name"/>
                 <xsl:if test="string-length(name) = 0">
                     [EMPTY]

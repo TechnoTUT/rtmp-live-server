@@ -7,7 +7,7 @@ EXPOSE 80
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update -y && apt-get upgrade -y \
+RUN apt-get update -y \
     && apt-get install -y nginx libnginx-mod-rtmp \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /dev/stdout /var/log/nginx/access.log \

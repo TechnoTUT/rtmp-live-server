@@ -29,7 +29,7 @@ let timer: any = null
 
 const updateThumbnail = () => {
   if (!props.active) return
-  // Fetch latest snapshot (5 FPS = 200ms interval)
+  // Fetch latest snapshot (10 FPS = 100ms interval)
   currentSrc.value = `http://localhost:8080/thumbnails/${props.streamName}.jpg?t=${Date.now()}`
 }
 
@@ -45,7 +45,7 @@ watch(() => props.active, (isActive) => {
   if (isActive) {
     updateThumbnail()
     if (!timer) {
-      timer = setInterval(updateThumbnail, 200)
+      timer = setInterval(updateThumbnail, 100)
     }
   } else {
     if (timer) {
@@ -59,7 +59,7 @@ watch(() => props.active, (isActive) => {
 onMounted(() => {
   if (props.active) {
     updateThumbnail()
-    timer = setInterval(updateThumbnail, 200)
+    timer = setInterval(updateThumbnail, 100)
   }
 })
 

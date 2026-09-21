@@ -4,30 +4,76 @@
       <span>OFFLINE</span>
     </div>
     <div v-else class="image-container">
-      <!-- 30 FPS Smooth MJPEG stream via single HTTP persistent connection -->
       <img
-        :src="streamUrl"
+        :src="currentSrc"
         alt="Live Preview"
         class="stream-thumb-img"
+        @load="onImageLoaded"
         @error="onImageError"
       />
-      <span class="live-tag">30 FPS</span>
+      <span class="live-tag">LIVE</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 const props = defineProps<{
   streamName: string
   active: boolean
 }>()
 
-const streamUrl = computed(() => {
-  if (!props.active) return ''
-  return `/mjpeg?stream=${encodeURIComponent(props.streamName)}`
+const currentSrc = ref('')
+let timer: ReturnType<typeof setInterval> | null = null
+let isFetching = false
+
+const updateFrame = () => {
+  if (!props.active || isFetching) return
+  isFetching = true
+  const nextSrc = `/api/thumbnail?stream=${encodeURIComponent(props.streamName)}&t=${Date.now()}`
+  
+  // Preload image off-DOM to eliminate any flicker
+  const img = new Image()
+  img.onload = () => {
+    currentSrc.value = nextSrc
+    isFetching = false
+  }
+  img.onerror = () => {
+    isFetching = false
+  }
+  img.src = nextSrc
+}
+
+const startPolling = () => {
+  stopPolling()
+  if (props.active) {
+    updateFrame()
+    // Poll at 5 fps (200ms) - smooth preview with balanced CPU usage
+    timer = setInterval(updateFrame, 200)
+  }
+}
+
+const stopPolling = () => {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
+  isFetching = false
+}
+
+watch(() => props.active, (val) => {
+  if (val) {
+    startPolling()
+  } else {
+    stopPolling()
+    currentSrc.value = ''
+  }
 })
+
+const onImageLoaded = () => {
+  // successfully rendered
+}
 
 const onImageError = (e: Event) => {
   const target = e.target as HTMLImageElement
@@ -35,6 +81,16 @@ const onImageError = (e: Event) => {
     target.style.opacity = '0.5'
   }
 }
+
+onMounted(() => {
+  if (props.active) {
+    startPolling()
+  }
+})
+
+onUnmounted(() => {
+  stopPolling()
+})
 </script>
 
 <style scoped>
@@ -78,7 +134,7 @@ const onImageError = (e: Event) => {
   position: absolute;
   top: 4px;
   left: 4px;
-  background: rgba(49, 130, 206, 0.9);
+  background: rgba(229, 62, 62, 0.9);
   color: white;
   font-size: 9px;
   font-weight: bold;

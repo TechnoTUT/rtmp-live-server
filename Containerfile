@@ -3,7 +3,7 @@ FROM debian:13-slim
 LABEL maintainer="TechnoTUT <gh@technotut.net>"
 
 EXPOSE 1935
-EXPOSE 80
+EXPOSE 8080
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -14,13 +14,14 @@ RUN apt-get update -y \
     && ln -sf /dev/stderr /var/log/nginx/error.log \
     && rm -rf /etc/nginx/nginx.conf \
     && rm -rf /var/www/html/favicon.ico \
-    && mkdir -p /var/www/html/rtmp /tmp/thumbnails \
-    && chmod 777 /tmp/thumbnails
+    && mkdir -p /var/www/html/rtmp /tmp/thumbnails /tmp/hls \
+    && chmod 777 /tmp/thumbnails /tmp/hls
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY favicon.ico /var/www/html/favicon.ico
 COPY stat.xsl /var/www/html/rtmp/stat.xsl
 COPY cleanup-stream.sh /usr/local/bin/cleanup-stream.sh
-RUN chmod +x /usr/local/bin/cleanup-stream.sh
+COPY generate-thumbnail.sh /usr/local/bin/generate-thumbnail.sh
+RUN chmod +x /usr/local/bin/cleanup-stream.sh /usr/local/bin/generate-thumbnail.sh
 
 CMD ["nginx", "-g", "daemon off;"]

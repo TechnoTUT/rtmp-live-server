@@ -49,8 +49,8 @@ const startPolling = () => {
   stopPolling()
   if (props.active) {
     updateFrame()
-    // Poll at 15 fps (66ms) - extra smooth preview with low-resource footprint
-    timer = setInterval(updateFrame, 66)
+    // Poll at 24 fps (~41ms) - cinematic smooth preview with iGPU acceleration
+    timer = setInterval(updateFrame, 41)
   }
 }
 

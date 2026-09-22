@@ -17,7 +17,7 @@ export default defineNuxtConfig({
     head: {
       title: 'RTMP Live Dashboard',
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
       ]
     }
   }
